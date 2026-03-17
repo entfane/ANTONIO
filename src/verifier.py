@@ -54,7 +54,7 @@ class Verifier:
             else:
                 last_idxs = enc['attention_mask'].sum(dim=1) - 1
                 hiddens = hidden[torch.arange(hidden.size(0)), last_idxs]
-            embeds.append(hiddens.cpu())
+            embeds.append(hiddens.cpu().float())
 
         return torch.cat(embeds, dim=0).numpy()
     
@@ -68,6 +68,8 @@ class Verifier:
             hi = hyperrectangle[:, 1]
             worst_point = np.where(weights >= 0, lo, hi)
             pre_sigm = float(worst_point @ weights)
+            if bias is not None:
+                pre_sigm += bias
             z = 1/(1 + np.exp(-pre_sigm))
             if z < threshold:
                 return self.SAT

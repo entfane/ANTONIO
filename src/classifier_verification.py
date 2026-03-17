@@ -75,7 +75,7 @@ if __name__ == "__main__":
     POOLING = args.pooling
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
-    classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto")
+    classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto", num_labels = 1)
     classifier.eval()
     if DATASET_NAME.endswith(".jsonl") or os.path.isfile(DATASET_NAME):
         dataset = load_dataset("json", data_files={DATASET_SPLIT: DATASET_NAME}, split=DATASET_SPLIT)
@@ -91,8 +91,8 @@ if __name__ == "__main__":
 
     hyperrectangles = [calculate_hyperrectangle(embeddings)]
     weights, bias = get_classifier_head(classifier)
-    weights = weights.squeeze().detach().cpu().numpy()
-    bias = bias.squeeze().detach().cpu().numpy() if bias is not None else None
+    weights = weights.squeeze().detach().cpu().float().numpy() @ align_mat
+    bias = bias.squeeze().detach().cpu().float().numpy() if bias is not None else None
 
     result = verifier.verify(hyperrectangles, weights, bias, THRESHOLD, align_mat)
     print(result)
