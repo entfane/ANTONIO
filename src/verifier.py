@@ -7,6 +7,9 @@ class Verifier:
     SAT = "SAT"
     UNSAT = "UNSAT"
 
+    def __init__(self, pooling):
+        self.pooling = pooling
+
     def __format_inputs(self, dataset, tokenizer, input_col, output_col):
 
         formatted_inputs = []
@@ -44,11 +47,14 @@ class Verifier:
                             padding_side="left", max_length=max_len).to(classifier.device)
             
             with torch.no_grad():
-                hidden = classifier.transformer(**enc).last_hidden_state
+                hidden = classifier.base_model(**enc).last_hidden_state
 
-            last_idxs = enc['attention_mask'].sum(dim=1) - 1
-            last_hiddens = hidden[torch.arange(hidden.size(0)), last_idxs]
-            embeds.append(last_hiddens.cpu())
+            if self.pooling == "first":
+                hiddens = hidden[:, 0]
+            else:
+                last_idxs = enc['attention_mask'].sum(dim=1) - 1
+                hiddens = hidden[torch.arange(hidden.size(0)), last_idxs]
+            embeds.append(hiddens.cpu())
 
         return torch.cat(embeds, dim=0).numpy()
     

@@ -34,6 +34,13 @@ if __name__ == "__main__":
         help="HuggingFace model ID (e.g. 'bert-base-uncased')"
     )
     parser.add_argument(
+        "--pooling", "-p",
+        type=str,
+        choices=["first", "last"],
+        required=True,
+        help="Pooling strategy: 'first' for encoder models ([CLS]), 'last' for decoder models"
+    )
+    parser.add_argument(
         "--dataset", "-d",
         type=str,
         required=True,
@@ -65,6 +72,7 @@ if __name__ == "__main__":
     OUTPUT_COL = args.output_col
     BATCH_SIZE = args.batch_size
     MAX_LEN = args.max_len
+    POOLING = args.pooling
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
     classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto")
@@ -74,7 +82,7 @@ if __name__ == "__main__":
     else:
         dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
 
-    verifier = Verifier()
+    verifier = Verifier(POOLING)
     embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
 
     align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
