@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-col", "-o", type=str, default=None, help="Dataset column to use as output label (optional)")
     parser.add_argument("--batch-size", "-b", type=int,   default=2,     help="Batch size for embedding extraction (default: 2)")
     parser.add_argument("--max-len",    "-l", type=int,   default=128,    help="Max token length for tokenizer (default: 128)")
-    parser.add_argument("--use-single-hyper-rectangle", type = str, default="true, help="Boolean, whether to use a single hyper-rectangle or use multiple eps-cubes (default: single hyper-rectangle)")
+    parser.add_argument("--use-single-hyper-rectangle", type = str, default="true", help="Boolean, whether to use a single hyper-rectangle or use multiple eps-cubes (default: single hyper-rectangle)")
     parser.add_argument("--eps", type=float, default=0.05, help="Epsilon value for hyper-cubes (default: 0.05)")
     args = parser.parse_args()
 
