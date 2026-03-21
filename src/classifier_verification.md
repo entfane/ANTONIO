@@ -1,9 +1,7 @@
 # Classifier Verification
-
 Verifies that all points within a computed hyper-rectangle are classified above a given threshold.
 
 ## Usage
-
 ```bash
 python src/classifier_verification.py \
   --model <model_id> \
@@ -15,7 +13,6 @@ python src/classifier_verification.py \
 ```
 
 ## Arguments
-
 | Argument | Short | Required | Default | Description |
 |---|---|---|---|---|
 | `--model` | `-m` | Yes | — | HuggingFace model ID |
@@ -29,16 +26,13 @@ python src/classifier_verification.py \
 | `--max-len` | `-l` | No | `128` | Max token length for tokenizer |
 
 ## Pooling Strategy
-
 Controls which hidden state is used as the sentence embedding:
-
 | Value | Use for | Reasoning |
 |---|---|---|
 | `first` | Encoder models (BERT, RoBERTa, DeBERTa, ...) | Takes the `[CLS]` token at position 0, which aggregates the full sequence |
 | `last` | Decoder models (GPT-2, LLaMA, Mistral, ...) | Takes the last non-padding token, the only one that has attended to the full context |
 
 ## Examples
-
 **Encoder model with HuggingFace dataset:**
 ```bash
 python src/classifier_verification.py \
@@ -50,7 +44,6 @@ python src/classifier_verification.py \
   --threshold 0.5 \
   --pooling first
 ```
-
 **Decoder model with local JSONL file:**
 ```bash
 python src/classifier_verification.py \
@@ -64,15 +57,12 @@ python src/classifier_verification.py \
 ```
 
 ## Local JSONL Format
-
 Each line should be a valid JSON object with at minimum an input column:
-
 ```json
 {"input": "What a great day", "output": "For sure"}
 {"input": "Can you recommend a good book?", "output": "Sure! I loved The Alchemist recently."}
 ```
 
 ## Output
-
 - **UNSAT** — every point inside the hyper-rectangle is classified `>= threshold`
 - **SAT** — there exists a point inside the hyper-rectangle classified `< threshold`
