@@ -2,7 +2,7 @@ import argparse
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from data import load_align_mat
-from hyperrectangles import calculate_hyperrectangle
+from hyperrectangles import calculate_hyperrectangle, load_hyperrectangles
 from verifier import Verifier
 from datasets import load_dataset
 import os
@@ -62,6 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-col", "-o", type=str, default=None, help="Dataset column to use as output label (optional)")
     parser.add_argument("--batch-size", "-b", type=int,   default=2,     help="Batch size for embedding extraction (default: 2)")
     parser.add_argument("--max-len",    "-l", type=int,   default=128,    help="Max token length for tokenizer (default: 128)")
+    parser.add_argument("--use-single-hyper-rectangle", type = bool, default=False, help="Boolean, whether to use a single hyper-rectangle or use multiple eps-cubes (default: single hyper-rectangle)")
+    parser.add_argument("--eps", type=float, default=0.05, help="Epsilon value for hyper-cubes (default: 0.05)")
     args = parser.parse_args()
 
     HF_MODEL    = args.model
@@ -73,6 +75,8 @@ if __name__ == "__main__":
     BATCH_SIZE = args.batch_size
     MAX_LEN = args.max_len
     POOLING = args.pooling
+    SINGLE_HYPER_RECTANGLE = args.use_single_hyper_rectangle
+    EPS = args.eps
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
     classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto", num_labels = 1)
@@ -88,8 +92,10 @@ if __name__ == "__main__":
     align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
     
     embeddings = embeddings @ align_mat
-
-    hyperrectangles = [calculate_hyperrectangle(embeddings)]
+    if SINGLE_HYPER_RECTANGLE:
+        hyperrectangles = [calculate_hyperrectangle(embeddings)]
+    else:
+        hyperrectangles = load_hyperrectangles(DATASET_NAME, HF_MODEL, "", False, eps = EPS)
     weights, bias = get_classifier_head(classifier)
     weights = weights.squeeze().detach().cpu().float().numpy() @ align_mat
     bias = bias.squeeze().detach().cpu().float().numpy() if bias is not None else None
