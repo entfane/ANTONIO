@@ -2,7 +2,8 @@ import argparse
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from data import load_align_mat
-from hyperrectangles import calculate_hyperrectangle, load_hyperrectangles
+from hyperrectangles import calculate_hyperrectangle
+from hyper_rect_extraction import compute_hyperrectangles
 from verifier import Verifier
 from datasets import load_dataset
 import os
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     if SINGLE_HYPER_RECTANGLE:
         hyperrectangles = [calculate_hyperrectangle(embeddings)]
     else:
-        hyperrectangles = load_hyperrectangles(DATASET_NAME, HF_MODEL, "", False, eps = EPS)
+        hyperrectangles = compute_hyperrectangles(embeddings, min_cluster_size=5)
     weights, bias = get_classifier_head(classifier)
     weights = weights.squeeze().detach().cpu().float().numpy() @ align_mat
     bias = bias.squeeze().detach().cpu().float().numpy() if bias is not None else None
