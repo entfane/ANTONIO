@@ -79,7 +79,6 @@ if __name__ == "__main__":
     POOLING = args.pooling
     SINGLE_HYPER_RECTANGLE = args.use_single_hyper_rectangle.lower() == "true"
     MIN_CLUSTER = args.min_cluster
-    EPS = args.eps
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
     classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto", num_labels = 1)
@@ -90,7 +89,7 @@ if __name__ == "__main__":
         dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
 
     verifier = Verifier(POOLING)
-    embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
+    embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, POOLING, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
 
     align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
     
