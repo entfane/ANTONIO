@@ -37,14 +37,14 @@ class Verifier:
                 formatted_inputs.append(inpt + outpt)
         return formatted_inputs
 
-    def extract_embeddings(self, dataset, classifier, tokenizer, input_col, output_col = None, batch_size = 2, max_len = 128):
+    def extract_embeddings(self, dataset, classifier, tokenizer, pooling, input_col, output_col = None, batch_size = 2, max_len = 128, ):
         formatted_inputs = self.__format_inputs(dataset, tokenizer, input_col, output_col)
-
+        padding = "left" if pooling == "last" else "right"
         embeds = []
         for i in range(0, len(formatted_inputs), batch_size):
             batch = formatted_inputs[i: i + batch_size]
             enc = tokenizer(batch, return_tensors="pt", padding=True,
-                            padding_side="left", max_length=max_len).to(classifier.device)
+                            padding_side=padding, max_length=max_len).to(classifier.device)
             
             with torch.no_grad():
                 hidden = classifier.base_model(**enc).last_hidden_state
