@@ -5,10 +5,9 @@ from hyperrectangles import calculate_hyperrectangle
 
 def compute_hyperrectangles(
     embeddings: np.ndarray,
-    min_cluster_size: int = 50,
-    metric: str = 'cosine',
+    min_cluster_size: int = 5,
 ) -> list[np.ndarray]:
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric=metric)
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric="cosine", algorithm='generic')
     clusterer.fit(embeddings)
 
     labels = clusterer.labels_

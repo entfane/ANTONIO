@@ -64,7 +64,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", "-b", type=int,   default=2,     help="Batch size for embedding extraction (default: 2)")
     parser.add_argument("--max-len",    "-l", type=int,   default=128,    help="Max token length for tokenizer (default: 128)")
     parser.add_argument("--use-single-hyper-rectangle", type = str, default="true", help="Boolean, whether to use a single hyper-rectangle or use multiple eps-cubes (default: single hyper-rectangle)")
-    parser.add_argument("--eps", type=float, default=0.05, help="Epsilon value for hyper-cubes (default: 0.05)")
+    parser.add_argument("--min-cluster", type=int, default=5, help="Minimum cluster size (default: 5)")
+
     args = parser.parse_args()
 
     HF_MODEL    = args.model
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     MAX_LEN = args.max_len
     POOLING = args.pooling
     SINGLE_HYPER_RECTANGLE = args.use_single_hyper_rectangle.lower() == "true"
-    EPS = args.eps
+    MIN_CLUSTER = args.min_cluster
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
     classifier = AutoModelForSequenceClassification.from_pretrained(HF_MODEL, device_map = "auto", num_labels = 1)
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         dataset = load_dataset(DATASET_NAME, split=DATASET_SPLIT)
 
     verifier = Verifier(POOLING)
-    embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
+    embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, POOLING, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
 
     align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
     
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     if SINGLE_HYPER_RECTANGLE:
         hyperrectangles = [calculate_hyperrectangle(embeddings)]
     else:
-        hyperrectangles = compute_hyperrectangles(embeddings, min_cluster_size=5)
+        hyperrectangles = compute_hyperrectangles(embeddings, min_cluster_size=MIN_CLUSTER)
     weights, bias = get_classifier_head(classifier)
     weights = weights.squeeze().detach().cpu().float().numpy() @ align_mat
     bias = bias.squeeze().detach().cpu().float().numpy() if bias is not None else None
