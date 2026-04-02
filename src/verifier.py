@@ -1,6 +1,7 @@
 from typing import List
 import numpy as np
 import torch
+from tqdm import tqdm
 
 class Verifier:
 
@@ -41,7 +42,7 @@ class Verifier:
         formatted_inputs = self.__format_inputs(dataset, tokenizer, input_col, output_col)
         padding = "left" if pooling == "last" else "right"
         embeds = []
-        for i in range(0, len(formatted_inputs), batch_size):
+        for i in tqdm(range(0, len(formatted_inputs), batch_size)):
             batch = formatted_inputs[i: i + batch_size]
             enc = tokenizer(batch, return_tensors="pt", padding=True,
                             padding_side=padding, max_length=max_len).to(classifier.device)
