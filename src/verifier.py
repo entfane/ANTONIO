@@ -62,17 +62,18 @@ class Verifier:
 
             
 
-    def verify(self, hyperrectangles: List, weights: np.ndarray, bias: float, threshold: float, align_matrix: np.ndarray) -> str:
+    def verify(self, hyperrectangles: List, weights: np.ndarray, bias: float, threshold: float, align_matrices: List[np.ndarray]) -> str:
 
-        for hyperrectangle in hyperrectangles:
+        for (hyperrectangle, align_mat) in zip(hyperrectangles, align_matrices):
             lo = hyperrectangle[:, 0]
             hi = hyperrectangle[:, 1]
-            worst_point = np.where(weights >= 0, lo, hi)
-            pre_sigm = float(worst_point @ weights)
+            aligned_weights = weights @ align_mat
+            worst_point = np.where(aligned_weights >= 0, lo, hi)
+            pre_sigm = float(worst_point @ aligned_weights)
             if bias is not None:
                 pre_sigm += bias
             z = 1/(1 + np.exp(-pre_sigm))
-            if z < threshold:
+            if z <= threshold:
                 return self.SAT
         
         return self.UNSAT
