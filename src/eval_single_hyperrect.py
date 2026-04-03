@@ -52,18 +52,19 @@ def split_dataset(dataset, label_col, n_eval_per_class=100, seed=42):
     return construction_dataset, eval_harmful_dataset, eval_harmless_dataset
 
 
-def extract_and_align(verifier, dataset, classifier, tokenizer, input_col, output_col,
+def extract_and_align(verifier, dataset, classifier, tokenizer, pooling, input_col, output_col,
                       batch_size, max_len, align_mat):
     """Extract embeddings for a dataset and project with the alignment matrix."""
     embeddings = verifier.extract_embeddings(
-        dataset, classifier, tokenizer, input_col, output_col, batch_size, max_len
+        dataset, classifier, tokenizer, pooling, input_col, output_col, batch_size, max_len
     )
     return embeddings @ align_mat
 
 
 def count_inside(embeddings, hyperrectangle):
     """Count how many embedding rows fall inside/outside the hyperrectangle."""
-    lower, upper = hyperrectangle
+    lower = hyperrectangle[:, 0]  # shape (dims,)
+    upper = hyperrectangle[:, 1]  # shape (dims,)
     mask = np.all((embeddings >= lower) & (embeddings <= upper), axis=1)
     return int(mask.sum()), int((~mask).sum())
 
@@ -122,9 +123,14 @@ if __name__ == "__main__":
 
     # ── Split into construction / eval sets (keyed on label col) ─────────────
     print(f"\nSplitting dataset (seed={args.seed}, {args.n_eval} eval samples per class)…")
+    # After split_dataset():
     construction_ds, eval_harmful_ds, eval_harmless_ds = split_dataset(
         full_dataset, args.label_col, n_eval_per_class=args.n_eval, seed=args.seed
     )
+
+    # ADD THIS LINE — keep only harmful samples for rectangle construction
+    construction_ds = construction_ds.filter(lambda ex: ex[args.label_col] == 1)
+    print(f"  Construction set (harmful only): {len(construction_ds)} records")
     print(f"  Construction set : {len(construction_ds)} records")
     print(f"  Eval harmful     : {len(eval_harmful_ds)} records  (label=1)")
     print(f"  Eval harmless    : {len(eval_harmless_ds)} records (label=0)")
@@ -132,9 +138,11 @@ if __name__ == "__main__":
     # ── Extract construction embeddings & compute alignment matrix ────────────
     verifier = Verifier(args.pooling)
 
+    
+
     print(f"\n[1/3] Extracting construction embeddings (batch_size={args.batch_size}, max_len={args.max_len})…")
     construction_embeddings = verifier.extract_embeddings(
-        construction_ds, classifier, tokenizer,
+        construction_ds, classifier, tokenizer, args.pooling, 
         args.input_col, args.output_col, args.batch_size, args.max_len
     )
     print(f"  Embeddings shape: {construction_embeddings.shape}")
@@ -147,22 +155,22 @@ if __name__ == "__main__":
     # ── Build the hyperrectangle ──────────────────────────────────────────────
     print("\n  Building hyperrectangle from construction embeddings…")
     hyperrectangle = calculate_hyperrectangle(construction_embeddings)
-    lower, upper = hyperrectangle
-    widths = upper - lower
-    print(f"  Hyperrectangle built in {lower.shape[0]}-dimensional space.")
-    print(f"  Bounds  — min lower: {lower.min():.4f}  |  max upper: {upper.max():.4f}")
-    print(f"  Widths  — mean: {widths.mean():.4f}  |  min: {widths.min():.4f}  |  max: {widths.max():.4f}")
+    np.save("bert_cyber_harm_single_hyperrect.npy", hyperrectangle)
+
+    align_mat      = np.load("datasets/urbas/cyber_harm_llama/embeddings/entfane/bert_cyberharm/align_mat.npy")
+    hyperrectangle = np.load("bert_cyber_harm_single_hyperrect.npy")
+
 
     # ── Extract eval embeddings & evaluate containment ────────────────────────
     print(f"\n[2/3] Extracting harmful eval embeddings ({len(eval_harmful_ds)} samples)…")
     harmful_emb = extract_and_align(
-        verifier, eval_harmful_ds, classifier, tokenizer,
+        verifier, eval_harmful_ds, classifier, tokenizer, args.pooling,
         args.input_col, args.output_col, args.batch_size, args.max_len, align_mat
     )
 
     print(f"[3/3] Extracting harmless eval embeddings ({len(eval_harmless_ds)} samples)…")
     harmless_emb = extract_and_align(
-        verifier, eval_harmless_ds, classifier, tokenizer,
+        verifier, eval_harmless_ds, classifier, tokenizer, args.pooling,
         args.input_col, args.output_col, args.batch_size, args.max_len, align_mat
     )
 
