@@ -12,8 +12,19 @@ def compute_hyperrectangles(
 
     labels = clusterer.labels_
 
+    cluster_ids = sorted(set(labels) - {-1})
+
+    center_of_rect = np.stack([
+        embeddings[labels == cid].mean(axis=0) for cid in cluster_ids
+    ])
+
+    for i, point in enumerate(embeddings):
+        if labels[i] == -1:
+            labels[i] = cluster_ids[np.argmin(np.linalg.norm(center_of_rect - point, axis=1))]
+
+
     rectangles = []
-    for cluster_id in sorted(set(labels) - {-1}):
+    for cluster_id in cluster_ids:
         points = embeddings[labels == cluster_id]
         rect   = calculate_hyperrectangle(points)
         rectangles.append(rect)
