@@ -1,6 +1,7 @@
 import hdbscan
 import numpy as np
 from hyperrectangles import calculate_hyperrectangle
+from data import load_align_mat
 
 
 def compute_hyperrectangles(
@@ -24,10 +25,14 @@ def compute_hyperrectangles(
 
 
     rectangles = []
+    align_matrices = []
     for cluster_id in cluster_ids:
         points = embeddings[labels == cluster_id]
+        align_mat = load_align_mat("DATSET", "MODEL", points, False)
+        points = points @ align_mat
         rect   = calculate_hyperrectangle(points)
         rectangles.append(rect)
+        align_matrices.append(align_mat)
 
     print(f"Found {len(rectangles)} rectangles")
-    return rectangles
+    return rectangles, align_matrices
