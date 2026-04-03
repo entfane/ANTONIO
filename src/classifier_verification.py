@@ -91,15 +91,16 @@ if __name__ == "__main__":
     verifier = Verifier(POOLING)
     embeddings = verifier.extract_embeddings(dataset, classifier, tokenizer, POOLING, INPUT_COL, OUTPUT_COL, BATCH_SIZE, MAX_LEN)
 
-    align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
     
-    embeddings = embeddings @ align_mat
     if SINGLE_HYPER_RECTANGLE:
+        align_mat  = load_align_mat(DATASET_NAME, HF_MODEL, embeddings, False)
+        embeddings = embeddings @ align_mat
+        align_mat = [align_mat]
         hyperrectangles = [calculate_hyperrectangle(embeddings)]
     else:
-        hyperrectangles = compute_hyperrectangles(embeddings, min_cluster_size=MIN_CLUSTER)
+        hyperrectangles, align_mat = compute_hyperrectangles(embeddings, min_cluster_size=MIN_CLUSTER)
     weights, bias = get_classifier_head(classifier)
-    weights = weights.squeeze().detach().cpu().float().numpy() @ align_mat
+    weights = weights.squeeze().detach().cpu().float().numpy()
     bias = bias.squeeze().detach().cpu().float().numpy() if bias is not None else None
 
     result = verifier.verify(hyperrectangles, weights, bias, THRESHOLD, align_mat)
