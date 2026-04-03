@@ -8,12 +8,18 @@ def compute_hyperrectangles(
     embeddings: np.ndarray,
     min_cluster_size: int = 5,
 ) -> list[np.ndarray]:
+    embeddings = embeddings.astype(np.float64)
     clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, metric="cosine", algorithm='generic')
     clusterer.fit(embeddings)
 
     labels = clusterer.labels_
 
     cluster_ids = sorted(set(labels) - {-1})
+
+    if not cluster_ids:
+        print("Warning: HDBSCAN found no clusters, falling back to a single cluster.")
+        labels = np.zeros(len(embeddings), dtype=int)
+        cluster_ids = [0]
 
     center_of_rect = np.stack([
         embeddings[labels == cid].mean(axis=0) for cid in cluster_ids
