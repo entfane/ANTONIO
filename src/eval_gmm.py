@@ -42,11 +42,7 @@ def split_dataset(dataset, label_col, n_eval_per_class=100, seed=42):
     return construction_dataset, eval_harmful_dataset, eval_harmless_dataset
 
 
-def fit_gmm_and_get_percentiles(embeddings, n_components=2, cov_type="diag", seed=42):
-    """
-    Fits a GMM and calculates the 5th and 95th percentiles 
-    of the log-likelihood scores from the training data.
-    """
+def fit_gmm(embeddings, n_components=2, cov_type="diag", seed=42):
     gmm = GaussianMixture(
         n_components=n_components, 
         covariance_type=cov_type, 
@@ -54,24 +50,31 @@ def fit_gmm_and_get_percentiles(embeddings, n_components=2, cov_type="diag", see
     )
     gmm.fit(embeddings)
     
-    # Score the training data
-    scores = gmm.score_samples(embeddings)
-    
-    # Find the exact scores that mark the 5% and 95% boundaries
-    p5 = np.percentile(scores, 5)
-    p95 = np.percentile(scores, 95)
-    
-    return gmm, p5, p95
+    return gmm
 
 
-def count_inside(embeddings, gmm, p5_thresh, p95_thresh):
-    """
-    Count how many embedding rows fall strictly inside the 5%-95% probability bounds
-    of the fitted GMM based on log-likelihood scores.
-    """
-    scores = gmm.score_samples(embeddings)
-    inside_mask = (scores >= p5_thresh) & (scores <= p95_thresh)
-    return int(inside_mask.sum()), int((~inside_mask).sum())
+def count_inside(embeddings, gmm, threshold = 3.0):
+    components = gmm.n_components
+    distances = []
+    for embedding in embeddings:
+        min_distance = np.inf
+        for component in range(components):
+            mean = gmm.means_[component]
+            cov = gmm.covariances_[component]
+            if cov.ndim == 1:
+                cov = np.diag(cov)
+            inverse_cov = np.linalg.inv(cov)
+            difference = mean - embedding
+            dist = np.sqrt(difference @ inverse_cov @ difference.T)
+            min_distance = np.min([min_distance, dist])
+
+        distances.append(min_distance)
+
+    distances = np.array(distances)
+    inside = distances <= threshold
+    return int(inside.sum()), int((~inside).sum())
+    
+
 
 
 if __name__ == "__main__":
@@ -94,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--cov-type",          type=str, default="diag", choices=["full", "tied", "diag", "spherical"],
                         help="Covariance type for GMM. 'diag' is recommended for high-dimensional embeddings.")
     parser.add_argument("--seed",              type=int, default=42)
+    parser.add_argument("--threshold", type=float, default=3.0, help="Allowance ,measured in standard deviations, to be counted as inside a Gaussian")
     args = parser.parse_args()
 
     # ── Load model & tokenizer ────────────────────────────────────────────────
@@ -154,9 +158,7 @@ if __name__ == "__main__":
         print(f"  Cached to {construction_cache}")
     print(f"  Embeddings shape: {construction_embeddings.shape}")
 
-    # ── Build GMM and Calculate Percentiles ───────────────────────────────────
-    print(f"\n  Building GMM (n_components={args.n_components}) and finding 5-95% bounds…")
-    gmm, p5_threshold, p95_threshold = fit_gmm_and_get_percentiles(
+    gmm = fit_gmm(
         construction_embeddings, 
         n_components=args.n_components, 
         cov_type=args.cov_type,
@@ -164,7 +166,6 @@ if __name__ == "__main__":
     )
     
     print(f"  GMM fitted successfully.")
-    print(f"  Log-likelihood boundaries: 5% = {p5_threshold:.4f}  |  95% = {p95_threshold:.4f}")
 
     # ── Extract or load eval embeddings ──────────────────────────────────────
     if os.path.exists(harmful_cache):
@@ -192,8 +193,8 @@ if __name__ == "__main__":
         print(f"  Cached to {harmless_cache}")
 
     # ── Evaluate containment ──────────────────────────────────────────────────
-    harmful_inside,  harmful_outside  = count_inside(harmful_emb,  gmm, p5_threshold, p95_threshold)
-    harmless_inside, harmless_outside = count_inside(harmless_emb, gmm, p5_threshold, p95_threshold)
+    harmful_inside,  harmful_outside  = count_inside(harmful_emb,  gmm, threshold=args.threshold)
+    harmless_inside, harmless_outside = count_inside(harmless_emb, gmm, threshold=args.threshold)
 
     total_inside  = harmful_inside  + harmless_inside
     total_outside = harmful_outside + harmless_outside
@@ -210,7 +211,6 @@ if __name__ == "__main__":
     # ── Report ────────────────────────────────────────────────────────────────
     print("\n" + "=" * 60)
     print("  GMM CONTAINMENT RESULTS")
-    print(f"  (Inside bounds: 5% to 95% of construction log-likelihood)")
     print("=" * 60)
     print(f"{'Category':<20} {'Inside':>8} {'Outside':>8} {'% Inside':>10}")
     print("-" * 60)
