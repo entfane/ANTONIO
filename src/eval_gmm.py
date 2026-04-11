@@ -64,8 +64,8 @@ def count_inside(embeddings, gmm, threshold = 3.0):
             if cov.ndim == 1:
                 cov = np.diag(cov)
             inverse_cov = np.linalg.inv(cov)
-            difference = mean - embedding
-            dist = np.sqrt(difference @ inverse_cov @ difference.T)
+            difference = embedding - mean
+            dist = np.sqrt(difference.T @ inverse_cov @ difference)
             min_distance = np.min([min_distance, dist])
 
         distances.append(min_distance)
