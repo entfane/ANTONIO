@@ -25,9 +25,9 @@ def compute_hyperrectangles(
         embeddings[labels == cid].mean(axis=0) for cid in cluster_ids
     ])
 
-    for i, point in enumerate(embeddings):
-        if labels[i] == -1:
-            labels[i] = cluster_ids[np.argmin(np.linalg.norm(center_of_rect - point, axis=1))]
+    # for i, point in enumerate(embeddings):
+    #     if labels[i] == -1:
+    #         labels[i] = cluster_ids[np.argmin(np.linalg.norm(center_of_rect - point, axis=1))]
 
 
     rectangles = []
