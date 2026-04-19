@@ -91,7 +91,7 @@ def load_align_mat(dataset_name, encoding_model_name, data, load_saved_align_mat
         # Rotate the data, aligning them to the axis
         print(data.shape)
         u, s, vh = np.linalg.svd(a=data)
-        align_mat = np.linalg.solve(a=vh, b=np.eye(len(data[0])))
+        align_mat = vh.T
 
         # Save the alignment matrix
         save_path = f'{path}/{dataset_name}/embeddings/{encoding_model_name}'
