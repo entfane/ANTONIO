@@ -155,10 +155,6 @@ if __name__ == "__main__":
     # ── Build the hyperrectangle ──────────────────────────────────────────────
     print("\n  Building hyperrectangle from construction embeddings…")
     hyperrectangle = calculate_hyperrectangle(construction_embeddings)
-    np.save("bert_cyber_harm_single_hyperrect.npy", hyperrectangle)
-
-    align_mat      = np.load("datasets/urbas/cyber_harm_llama/embeddings/entfane/bert_cyberharm/align_mat.npy")
-    hyperrectangle = np.load("bert_cyber_harm_single_hyperrect.npy")
 
 
     # ── Extract eval embeddings & evaluate containment ────────────────────────
