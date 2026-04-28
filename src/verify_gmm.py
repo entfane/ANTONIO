@@ -31,13 +31,16 @@ def build_chat_texts(dataset, input_col, output_col, tokenizer):
         inpt = row[input_col]
         if output_col is not None:
             outpt = row[output_col]
-            messages = [
-                {"role": "user", "content": inpt},
-                {"role": "assistant", "content": str(outpt)},
-            ]
-            text = tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=False
-            )
+            if tokenizer.chat_template:
+                messages = [
+                    {"role": "user", "content": inpt},
+                    {"role": "assistant", "content": str(outpt)},
+                ]
+                text = tokenizer.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=False
+                )
+            else:
+                text = inpt + "\n" + outpt
         else:
             text = inpt
         texts.append(text)
