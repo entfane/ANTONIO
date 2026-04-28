@@ -81,7 +81,7 @@ def verify_gmm(embeddings, weight, bias, threshold, n_components, cov_type):
         sigma_k = gmm.covariances_[k]
 
         mean_y = float(weight @ mu_k) + bias
-        var_y = float(weight @ sigma_k @ weight)
+        var_y = float(weight.T @ sigma_k @ weight)
         std_y = math.sqrt(max(var_y, 1e-12))
 
         z = (threshold_logit - mean_y) / std_y
