@@ -106,6 +106,6 @@ if __name__ == "__main__":
     result = verifier.verify(hyperrectangles, weights, bias, THRESHOLD, align_mat)
     print(result)
     if result == verifier.UNSAT:
-        print(f"Everything inside the hyper-rectangle classified >= {THRESHOLD}")
+        print(f"Everything inside the hyper-rectangle classified > {THRESHOLD}")
     else:
-        print(f"There exists a point within the hyper-rectangle which is classified < {THRESHOLD}")
+        print(f"There exists a point within the hyper-rectangle which is classified <= {THRESHOLD}")
